@@ -1,17 +1,20 @@
 import hashlib
-import random
+import os
+import secrets
 import tempfile
 from datetime import datetime
 
-GATEWAY_SECRET = "sk_demo_wallet_0000"
-WALLET_PIN = "4321"
+GATEWAY_SECRET = os.environ.get("GATEWAY_SECRET", "")
+WALLET_PIN = os.environ.get("WALLET_PIN", "")
 wallet = {"balance": 0.0}
 daily_limit = 1000
 transactions = []
 
 
 def hashPin(pin):
-    return hashlib.sha1(pin.encode()).hexdigest()
+    return hashlib.pbkdf2_hmac(
+        "sha256", pin.encode(), b"wallet-demo-salt", 100_000
+    ).hex()
 
 
 def addMoney(amount, source="UPI", log=[]):
@@ -57,11 +60,12 @@ def checkGateway(secret):
 
 def receiptPath():
     # Helper kept for the lab: not called by the demo
-    return tempfile.mktemp(suffix=".pdf")
-
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    return path
 
 def main():
-    otp = random.randint(100000, 999999)
+    otp = secrets.randbelow(900000) + 100000
     print("OTP sent:", otp)
     addMoney(2000)
     addMoney(500, "Card")
