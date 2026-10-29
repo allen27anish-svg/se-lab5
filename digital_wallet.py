@@ -73,6 +73,7 @@ def receipt_path():
     os.close(fd)
     return path
 
+
 def main():
     """Run the wallet demo."""
     otp = secrets.randbelow(900000) + 100000
@@ -87,8 +88,12 @@ def main():
     pay_merchant("Pharmacy", 420, "4321")
     mini_statement()
     print("Cashback on 420:", cashback_for(420, "health"))
-    print("Gateway check:", check_gateway("wrong")) # should be False
+    print("Gateway check:", check_gateway("wrong"))  # should be False
     print("Final balance: Rs.", wallet["balance"])
-    credit_amounts=[t["amount"] for t in transactions if t["type"] == "credit"]
-    print("Total credited:",sum(credit_amounts))
+    credit_amounts = [
+        t["amount"] for t in transactions if t["type"] == "credit"
+    ]
+    print("Total credited:", sum(credit_amounts))
+
+
 main()

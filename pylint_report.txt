@@ -1,5 +1,5 @@
 ﻿************* Module digital_wallet
-digital_wallet.py:94:0: C0327: Mixed line endings LF and CRLF (mixed-line-endings)
+digital_wallet.py:99:0: C0327: Mixed line endings LF and CRLF (mixed-line-endings)
 
 ------------------------------------------------------------------
 Your code has been rated at 9.84/10 (previous run: 9.84/10, +0.00)
