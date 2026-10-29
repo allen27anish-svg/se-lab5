@@ -1,3 +1,4 @@
+﻿"""Simple digital wallet demo: add money, pay merchants, view statements."""
 import hashlib
 import os
 import secrets
@@ -6,18 +7,21 @@ from datetime import datetime
 
 GATEWAY_SECRET = os.environ.get("GATEWAY_SECRET", "")
 WALLET_PIN = os.environ.get("WALLET_PIN", "")
-wallet = {"balance": 0.0}
-daily_limit = 1000
+wallet = {"balance": 0.0, "daily_limit": 1000}
 transactions = []
 
 
-def hashPin(pin):
+def hash_pin(pin):
+    """Return a salted PBKDF2 hash of the PIN."""
     return hashlib.pbkdf2_hmac(
         "sha256", pin.encode(), b"wallet-demo-salt", 100_000
     ).hex()
 
 
-def addMoney(amount, source="UPI", log=[]):
+def add_money(amount, source="UPI", log=None):
+    """Add money to the wallet and record the credit."""
+    if log is None:
+        log = []
     if amount <= 0:
         return False
     wallet["balance"] += amount
@@ -27,16 +31,17 @@ def addMoney(amount, source="UPI", log=[]):
     return True
 
 
-def setDailyLimit(newLimit):
-    global daily_limit
-    daily_limit = newLimit
+def set_daily_limit(new_limit):
+    """Set the daily spending limit."""
+    wallet["daily_limit"] = new_limit
 
 
-def payMerchant(merchant, amount, pin):
-    if hashPin(pin) != hashPin(WALLET_PIN):
+def pay_merchant(merchant, amount, pin):
+    """Pay a merchant after checking the PIN, balance and daily limit."""
+    if hash_pin(pin) != hash_pin(WALLET_PIN):
         print("Wrong PIN for payment to", merchant)
         return False
-    if amount > wallet["balance"] or amount > daily_limit:
+    if amount > wallet["balance"] or amount > wallet["daily_limit"]:
         print("Payment to", merchant, "declined")
         return False
     wallet["balance"] -= amount
@@ -45,40 +50,45 @@ def payMerchant(merchant, amount, pin):
     return True
 
 
-def miniStatement(count=3):
+def mini_statement(count=3):
+    """Print the most recent transactions."""
     for entry in transactions[-count:]:
         print(entry["type"], entry["amount"], entry["party"])
 
 
-def cashbackFor(amount, merchantType):
+def cashback_for(amount, _merchant_type):
+    """Return 2% cashback on the given amount."""
     return round(amount * 0.02, 2)
 
 
-def checkGateway(secret):
+def check_gateway(secret):
+    """Return True if the secret matches the gateway secret."""
     return secret == GATEWAY_SECRET
 
 
-def receiptPath():
+def receipt_path():
+    """Create a temporary receipt file and return its path."""
     # Helper kept for the lab: not called by the demo
     fd, path = tempfile.mkstemp(suffix=".pdf")
     os.close(fd)
     return path
 
 def main():
+    """Run the wallet demo."""
     otp = secrets.randbelow(900000) + 100000
     print("OTP sent:", otp)
-    addMoney(2000)
-    addMoney(500, "Card")
-    addMoney(-10)
-    setDailyLimit(1500)
-    payMerchant("Coffee Corner", 180, "4321")
-    payMerchant("Book Store", 5000, "4321")
-    payMerchant("Grocery Mart", 350, "0000")
-    payMerchant("Pharmacy", 420, "4321")
-    miniStatement()
-    print("Cashback on 420:", cashbackFor(420, "health"))
-    print("Gateway check:", checkGateway("wrong")) # should be False
+    add_money(2000)
+    add_money(500, "Card")
+    add_money(-10)
+    set_daily_limit(1500)
+    pay_merchant("Coffee Corner", 180, "4321")
+    pay_merchant("Book Store", 5000, "4321")
+    pay_merchant("Grocery Mart", 350, "0000")
+    pay_merchant("Pharmacy", 420, "4321")
+    mini_statement()
+    print("Cashback on 420:", cashback_for(420, "health"))
+    print("Gateway check:", check_gateway("wrong")) # should be False
     print("Final balance: Rs.", wallet["balance"])
-    creditAmounts=[t["amount"] for t in transactions if t["type"] == "credit"]
-    print("Total credited:",sum(creditAmounts))
+    credit_amounts=[t["amount"] for t in transactions if t["type"] == "credit"]
+    print("Total credited:",sum(credit_amounts))
 main()
